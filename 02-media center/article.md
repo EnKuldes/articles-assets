@@ -11,7 +11,7 @@ I also will add Jellyseer as a plugin for Jellyfin. Jellyseer will be media requ
 
 ## Installing Jellyfin & Jellyseer
 
-To install both these apps im gonna use Docker or more specificaly docker-compose. Here are my directory tree
+To install both these apps im gonna use Docker or more specificaly docker-compose. Here are my directory tree:
 
 ```
 📦 Home Lab
@@ -43,9 +43,6 @@ services:
       - ${JELLYFIN_ANIME}:/data/anime
     ports:
       - 8096:8096
-      #- 8920:8920 #optional
-      #- 7359:7359/udp #optional
-      #- 1900:1900/udp #optional
     restart: unless-stopped
 
 ```
@@ -61,10 +58,76 @@ services:
     environment:
       - LOG_LEVEL=debug
       - TZ=Asia/Jakarta
-      # - PORT=5055 #optional
     ports:
       - 5055:5055
     volumes:
       - ./config:/app/config
     restart: unless-stopped
 ```
+
+Here are few explaination regarding my snippets.
+
+
+- PUID and GUID are user and group identifiers, this useful because sometimes we got an permission issue between our host and container when we are using Docker Volume. By default the value is `1000`, but you can reconfirm it on your terminal by running this 
+
+```
+id your_user
+```
+
+For my case it's like this:
+
+```
+uid=1000(farhan) gid=1000(farhan) groups=1000(farhan)
+```
+
+- TZ basically a timezone setting.
+- Volumes or Docker Volume are a way to store/read data outside the container. For example at Jellyseer snippet, I connect the data inside container of /app/data to host at jellyseer directory, if we put in tree view it would look like this after you successfully run the docker compose.
+
+```
+📦 Home Lab
+└─ jellyseer
+   └─ docker-compose.yml
+   └─ config
+   │  ├─ cache
+   │  ├─ db
+   │  ├─ logs
+   └─ └─ setting.json
+```
+
+This also include the Jellfin snippets, the difference is on Jellyfin snippet I'm using enviroment variable. I set it up by adding it to all users on `/etc/enviroment`, below are my enviroment variables
+
+```
+JELLYFIN_LIBRARY="/home/homelab/jellyfin/config"
+# Media Library Path here
+JELLYFIN_TV_SERIES="/home/media-library/TV"
+JELLYFIN_MOVIES="/home/media-library/Movies"
+JELLYFIN_ANIME="/home/media-library/Anime"
+```
+With this being setup now every config/cache related to jellyfin will be stored inside my host `/home/homelab/jellyfin/config` path, while my media is being readed by jellyfin based on those paths.
+
+- Ports are mapper between host and container, in this case I use default port of 8096 and 5055.
+
+Now let's run the container, we can run it using docker compose command by access its directory
+
+```
+# incase there is warning when running it, its probably because the enviroment variables is not refreshed, can be fix it by relogin your SSH/telnet or entering and exiting root
+docker compose up -d
+# or
+sudo docker compose up -d
+```
+
+It will building and you can see the progress by doing this command
+
+```
+# remove -f if dont wanna tailing the output
+docker logs -f (container_name)
+# for jellyfin
+docker logs -f jellyfin
+# for jellyseer
+docker logs -f jellyseerr
+```
+
+After building is done, I can access it through my IP and port which is
+
+- 192.168.1.97:8096 for Jellyfin
+- 192.168.1.97:5055 for Jellyseerr
